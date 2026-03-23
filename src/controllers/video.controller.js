@@ -9,12 +9,12 @@ import Province from '../models/Province.js';
 // Return all videos of category "movie" ordered by views
 const getAllMovies = asyncHandler(async (req, res) => {
     const movies = await Video.find({ category: "movie" })
-        .sort({ views: -1 }) // Sort by views in descending order
-        .populate('uploadedBy', 'name');
+        .select("title releaseYear thumbnailUrl")
+        .sort({ views: -1 });
 
-    return res
-        .status(200)
-        .json(new apiResponse(200, movies, "Movies retrieved successfully"));
+    return res.status(200).json(
+        new apiResponse(200, movies, "Movies retrieved successfully")
+    );
 });
 
 // GET /api/video
@@ -37,13 +37,13 @@ const getNepaliMovies = asyncHandler(async (req, res) => {
         category: "movie",
         province: { $ne: null }
     })
-        .sort({ views: -1 })
-        .populate('province', 'name')
-        .populate('uploadedBy', 'name');
+        .select("title releaseYear thumbnailUrl")
+        .populate("province", "name")
+        .sort({ views: -1 });
 
-    return res
-        .status(200)
-        .json(new apiResponse(200, movies, "Nepali movies retrieved successfully"));
+    return res.status(200).json(
+        new apiResponse(200, movies, "Nepali movies retrieved successfully")
+    );
 });
 
 // GET /api/video/search
@@ -107,16 +107,16 @@ const getVideoById = asyncHandler(async (req, res) => {
     }
 
     const video = await Video.findById(videoId)
-        .populate('province', 'name')
-        .populate('uploadedBy', 'name');
+        .select("title description videoUrl thumbnailUrl duration genre releaseYear province") // ✅ only needed fields
+        .populate('province', 'name');
 
     if (!video) {
         throw new apiError(404, "Video not found");
     }
 
-    return res
-        .status(200)
-        .json(new apiResponse(200, video, "Video retrieved successfully"));
+    return res.status(200).json(
+        new apiResponse(200, video, "Video retrieved successfully")
+    );
 });
 
 const uploadVideo = asyncHandler(async (req, res) => {
