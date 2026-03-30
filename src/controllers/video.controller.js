@@ -23,7 +23,8 @@ const getAllVideos = asyncHandler(async (req, res) => {
     const videos = await Video.find({})
         .sort({ views: -1 })
         .populate('province', 'name')
-        .populate('uploadedBy', 'name');
+        .populate('uploadedBy', 'name')
+        .lean();
 
     return res
         .status(200)
@@ -73,23 +74,30 @@ const searchMovies = asyncHandler(async (req, res) => {
         .json(new apiResponse(200, movies, "Search results retrieved successfully"));
 });
 const getProvinceVideos = asyncHandler(async (req, res) => {
+    const { slug, category } = req.params;
+    const { limit = 6 } = req.query;
 
-    const { provinceId, category } = req.params;
+    // 1️⃣ Find province by slug
+    const province = await Province.findOne({ slug });
 
+    if (!province) {
+        throw new apiError(404, "Province not found");
+    }
+
+    // 2️⃣ Fetch videos using province._id
     const videos = await Video.find({
-        province: provinceId,
+        province: province._id,
         category: category
     })
-        .sort({ views: -1 }) // most popular first
-        .populate("province", "name")
-        .populate("uploadedBy", "name")
-        .limit(10);
+        .select("title thumbnailUrl")
+        .sort({ views: -1 })
+        .limit(parseInt(limit))
+        .lean();
 
     return res.status(200).json(
         new apiResponse(200, videos, "Province videos fetched successfully")
     );
 });
-
 // GET /api/provinces
 // Fetch and return all provinces, sorted alphabetically by name
 const getAllProvinces = asyncHandler(async (req, res) => {
@@ -147,7 +155,7 @@ const uploadVideo = asyncHandler(async (req, res) => {
     // Find province by name and get its ObjectId (or null if not found)
     let provinceId = null;
     if (province) {
-        const provinceExists = await Province.findOne({ name: province });
+        const provinceExists = await Province.findOne({ slug: province });
         if (provinceExists) {
             provinceId = provinceExists._id;
         }
@@ -170,7 +178,11 @@ const uploadVideo = asyncHandler(async (req, res) => {
 
     return res
         .status(201)
-        .json(new apiResponse(201, video, "Video uploaded successfully"));
+        .json(new apiResponse(201, {
+            _id: video._id,
+            title: video.title,
+            category: video.category
+        }, "Video uploaded successfully"));
 });
 
 const updateVideo = asyncHandler(async (req, res) => {
@@ -245,32 +257,42 @@ const deleteVideo = asyncHandler(async (req, res) => {
         throw new apiError(404, "Video not found");
     }
 
-    // Extract public IDs from Cloudinary URLs for deletion
-    const videoPublicId = video.videoUrl.split('/').pop().split('.')[0];
-    const thumbnailPublicId = video.thumbnailUrl.split('/').pop().split('.')[0];
+    const getPublicId = (url) => {
+        const decodedUrl = decodeURIComponent(url); 
 
-    // Delete files from Cloudinary
+        const parts = decodedUrl.split('/');
+        const uploadIndex = parts.indexOf("upload");
+        const afterUpload = parts.slice(uploadIndex + 1);
+
+        if (afterUpload[0].startsWith("v")) {
+            afterUpload.shift();
+        }
+
+        return afterUpload.join('/').split('.')[0];
+    };
+
+    const videoPublicId = getPublicId(video.videoUrl);
+    const thumbnailPublicId = getPublicId(video.thumbnailUrl);
+
     try {
-        // Delete video file
-        if (videoPublicId) {
-            await cloudinary.uploader.destroy(`ott/videos/${videoPublicId}`, { resource_type: 'video' });
-        }
+        await cloudinary.uploader.destroy(videoPublicId, {
+            resource_type: "video",
+            invalidate: true
+        });
 
-        // Delete thumbnail file
-        if (thumbnailPublicId) {
-            await cloudinary.uploader.destroy(`ott/thumbnails/${thumbnailPublicId}`);
-        }
-    } catch (cloudinaryError) {
-        console.error('Error deleting files from Cloudinary:', cloudinaryError);
-        // Continue with database deletion even if Cloudinary deletion fails
+        await cloudinary.uploader.destroy(thumbnailPublicId, {
+            invalidate: true
+        });
+
+    } catch (err) {
+        console.error("Cloudinary delete error:", err);
     }
 
-    // Delete video document from database
     await Video.findByIdAndDelete(videoId);
 
-    return res
-        .status(200)
-        .json(new apiResponse(200, null, "Video deleted successfully"));
+    return res.status(200).json(
+        new apiResponse(200, null, "Video deleted successfully")
+    );
 });
 
 export {
