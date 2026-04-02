@@ -108,6 +108,7 @@ const getAllProvinces = asyncHandler(async (req, res) => {
 });
 
 const getVideoById = asyncHandler(async (req, res) => {
+    console.log("PARAM:", req.params.videoId);
     const { videoId } = req.params;
 
     if (!videoId) {
@@ -185,37 +186,38 @@ const uploadVideo = asyncHandler(async (req, res) => {
         }, "Video uploaded successfully"));
 });
 
+
 const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
 
-    if (!videoId) {
-        throw new apiError(400, "Video ID is required");
-    }
+    if (!videoId) throw new apiError(400, "Video ID is required");
 
     const video = await Video.findById(videoId);
-    if (!video) {
-        throw new apiError(404, "Video not found");
-    }
+    if (!video) throw new apiError(404, "Video not found");
 
-    // allow updating any of the basic fields
+    // Extract public_id from Cloudinary URL
+    const extractPublicId = (url) => {
+        if (!url) return null;
+        const parts = url.split('/');
+        const uploadIndex = parts.indexOf('upload');
+        const startIndex = parts[uploadIndex + 1]?.startsWith('v')
+            ? uploadIndex + 2
+            : uploadIndex + 1;
+        const filePart = parts.slice(startIndex).join('/');
+        return filePart.replace(/\.[^/.]+$/, '');
+    };
+
+    // Update text fields
     const updatableFields = [
-        'title',
-        'description',
-        'genre',
-        'language',
-        'releaseYear',
-        'duration',
-        'category',
-        'province'
+        'title', 'description', 'genre', 'language',
+        'releaseYear', 'duration', 'category', 'province'
     ];
 
     for (const field of updatableFields) {
         if (req.body[field] !== undefined) {
-            // parse integers where appropriate
             if (field === 'releaseYear' || field === 'duration') {
                 video[field] = parseInt(req.body[field]);
             } else if (field === 'province') {
-                // Handle province: convert province name to ObjectId
                 if (req.body[field]) {
                     const provinceExists = await Province.findOne({ name: req.body[field] });
                     video[field] = provinceExists ? provinceExists._id : null;
@@ -228,15 +230,29 @@ const updateVideo = asyncHandler(async (req, res) => {
         }
     }
 
-    // handle new upload URLs if files were provided
-    if (req.files) {
-        if (req.files.video && req.files.video[0]) {
-            video.videoUrl = req.files.video[0].path;
+    // CASE 1 & 2: new video sent → delete old video, save new URL
+    if (req.files?.video?.[0]) {
+        if (video.videoUrl) {
+            const oldPublicId = extractPublicId(video.videoUrl);
+            if (oldPublicId) {
+                await cloudinary.uploader.destroy(oldPublicId, { resource_type: 'video' });
+            }
         }
-        if (req.files.thumbnail && req.files.thumbnail[0]) {
-            video.thumbnailUrl = req.files.thumbnail[0].path;
-        }
+        video.videoUrl = req.files.video[0].path;
     }
+
+    // CASE 2: new thumbnail sent → delete old thumbnail, save new URL
+    if (req.files?.thumbnail?.[0]) {
+        if (video.thumbnailUrl) {
+            const oldPublicId = extractPublicId(video.thumbnailUrl);
+            if (oldPublicId) {
+                await cloudinary.uploader.destroy(oldPublicId, { resource_type: 'image' });
+            }
+        }
+        video.thumbnailUrl = req.files.thumbnail[0].path;
+    }
+
+    // CASE 3: no files sent → videoUrl and thumbnailUrl stay unchanged
 
     await video.save();
 
@@ -258,7 +274,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
     }
 
     const getPublicId = (url) => {
-        const decodedUrl = decodeURIComponent(url); 
+        const decodedUrl = decodeURIComponent(url);
 
         const parts = decodedUrl.split('/');
         const uploadIndex = parts.indexOf("upload");
