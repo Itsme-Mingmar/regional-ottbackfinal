@@ -31,7 +31,7 @@ const thumbnailStorage = new CloudinaryStorage({
 export const uploadVideo = multer({
   storage: videoStorage,
   limits: {
-    fileSize: 100 * 1024 * 1024, // 100MB limit for videos
+    fileSize: 500 * 1024 * 1024, // 100MB limit for videos
   },
 });
 
@@ -64,6 +64,6 @@ class CombinedStorage {
 export const uploadVideoAndThumbnail = multer({
   storage: new CombinedStorage(),
   limits: {
-    fileSize: 100 * 1024 * 1024, // 100MB default
+    fileSize: 500 * 1024 * 1024, // 100MB default
   },
 });
