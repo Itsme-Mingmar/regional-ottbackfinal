@@ -80,6 +80,7 @@ videoSchema.index({ province: 1, category: 1 });
 // Unique title per category (optional but useful)
 videoSchema.index({ title: 1, category: 1 });
 
-const Video = mongoose.model("Video", videoSchema);
-
+const Video =
+  mongoose.models.Video ||
+  mongoose.model("Video", videoSchema);
 export default Video;
