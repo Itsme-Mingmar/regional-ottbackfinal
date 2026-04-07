@@ -5,6 +5,7 @@ import { userRouter } from "./routes/userRoutes.js";
 import { videoRouter } from "./routes/videoRoutes.js";
 import { watchRouter } from "./routes/watchHistoryRoutes.js";
 import { paymentRoutes } from "./routes/paymentRoutes.js"; 
+import { recommenderRouter } from "./routes/recommenderRouters.js";
 
 const app = express();
 
@@ -38,5 +39,5 @@ app.use("/api/user",userRouter);
 app.use("/api/video", videoRouter);
 app.use("/api/watch", watchRouter);
 app.use("/api/payment", paymentRoutes);
-
+app.use("/api", recommenderRouter);
 export default app;
