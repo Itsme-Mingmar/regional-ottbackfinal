@@ -9,7 +9,7 @@ import Province from '../models/Province.js';
 // Return all videos of category "movie" ordered by views
 const getAllMovies = asyncHandler(async (req, res) => {
     const movies = await Video.find({ category: "movie" })
-        .select("title releaseYear thumbnailUrl")
+        .select("title releaseYear thumbnailUrl genre description language")
         .sort({ views: -1 });
 
     return res.status(200).json(
