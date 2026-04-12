@@ -9,7 +9,6 @@ import {
   getProvinceVideos,
   getAllProvinces,
   getNepaliMovies,
-  searchMovies
 } from "../controllers/video.controller.js";
 
 import { uploadVideoAndThumbnail } from "../middleware/multer.middleware.js";
@@ -41,9 +40,6 @@ videoRouter.get("/provinces", getAllProvinces);
 
 // Nepali movies
 videoRouter.get("/nepali-movies", getNepaliMovies);
-
-// Search
-videoRouter.get("/search", searchMovies);
 
 // Province-based videos
 videoRouter.get("/province/:slug/:category", getProvinceVideos);
