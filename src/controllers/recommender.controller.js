@@ -1,5 +1,5 @@
 import WatchHistory from "../models/watchHistory.js";
-import Video from "../models/video.js";
+import Video from "../models/Video.js";
 import axios from "axios";
 
 export const getRecommendations = async (req, res) => {
