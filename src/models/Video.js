@@ -14,7 +14,7 @@ const videoSchema = new mongoose.Schema(
     },
 
     genre: {
-      type: String,
+      type: [String],
       required: true,
       trim: true,
     },

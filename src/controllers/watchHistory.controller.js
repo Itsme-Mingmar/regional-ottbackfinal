@@ -26,7 +26,7 @@ const startWatch = asyncHandler(async (req, res) => {
         },
         {
             upsert: true, // Create if doesn't exist, update if exists
-            new: true, // Return updated document
+            returnDocument: "after" // Return updated document
         }
     );
 
