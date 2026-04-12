@@ -295,4 +295,36 @@
       .json(new apiResponse(200, {}, "Logged out successfully"));
   });
 
-  export { registerUser, updateUserPlan, checkEmail, loginUser, getUserProfile, logoutUser };
+  const getAllUsers = asyncHandler(async (req, res) => {
+    const users = await User.find({}).populate('selectedProvince', 'name slug').select('-password');
+    return res
+      .status(200)
+      .json(new apiResponse(200, users, "Users retrieved successfully"));
+  });
+
+  const deleteUser = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+    const user = await User.findByIdAndDelete(userId);
+    if (!user) {
+      throw new apiError(404, "User not found");
+    }
+    return res
+      .status(200)
+      .json(new apiResponse(200, {}, "User deleted successfully"));
+  });
+
+  const updateUserRole = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+    const { role } = req.body;
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new apiError(404, "User not found");
+    }
+    user.role = role;
+    await user.save();
+    return res
+      .status(200)
+      .json(new apiResponse(200, user, "User role updated successfully"));
+  });
+
+  export { registerUser, updateUserPlan, checkEmail, loginUser, getUserProfile, logoutUser, getAllUsers, deleteUser, updateUserRole };
