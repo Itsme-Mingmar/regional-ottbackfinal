@@ -47,32 +47,6 @@ const getNepaliMovies = asyncHandler(async (req, res) => {
     );
 });
 
-// GET /api/video/search
-// Search only in movies (exclude documentaries and cultural)
-// query parameter: q (search term)
-const searchMovies = asyncHandler(async (req, res) => {
-    const { q } = req.query;
-    if (!q) {
-        throw new apiError(400, "Search query parameter 'q' is required");
-    }
-
-    const regex = new RegExp(q, 'i');
-    const movies = await Video.find({
-        category: "movie",
-        $or: [
-            { title: regex },
-            { description: regex },
-            { genre: regex }
-        ]
-    })
-        .sort({ views: -1 })
-        .populate('uploadedBy', 'name')
-        .populate('province', 'name');
-
-    return res
-        .status(200)
-        .json(new apiResponse(200, movies, "Search results retrieved successfully"));
-});
 const getProvinceVideos = asyncHandler(async (req, res) => {
     const { slug, category } = req.params;
     const { limit = 6 } = req.query;
@@ -108,7 +82,6 @@ const getAllProvinces = asyncHandler(async (req, res) => {
 });
 
 const getVideoById = asyncHandler(async (req, res) => {
-    console.log("PARAM:", req.params.videoId);
     const { videoId } = req.params;
 
     if (!videoId) {
@@ -116,7 +89,7 @@ const getVideoById = asyncHandler(async (req, res) => {
     }
 
     const video = await Video.findById(videoId)
-        .select("title description videoUrl thumbnailUrl duration genre releaseYear province") // ✅ only needed fields
+        .select("title description videoUrl thumbnailUrl duration genre releaseYear province category") // ✅ only needed fields
         .populate('province', 'name');
 
     if (!video) {
@@ -244,11 +217,49 @@ const updateVideo = asyncHandler(async (req, res) => {
     // CASE 2: new thumbnail sent → delete old thumbnail, save new URL
     if (req.files?.thumbnail?.[0]) {
         if (video.thumbnailUrl) {
-            const oldPublicId = extractPublicId(video.thumbnailUrl);
-            if (oldPublicId) {
-                await cloudinary.uploader.destroy(oldPublicId, { resource_type: 'image' });
+            try {
+                const getPublicId = (url) => {
+                    const decodedUrl = decodeURIComponent(url);
+
+                    const parts = decodedUrl.split('/');
+                    const uploadIndex = parts.indexOf("upload");
+
+                    if (uploadIndex === -1) return null;
+
+                    const afterUpload = parts.slice(uploadIndex + 1);
+
+                    if (afterUpload[0]?.startsWith("v")) {
+                        afterUpload.shift();
+                    }
+
+                    return afterUpload.join('/').split('.')[0];
+                };
+
+                const oldPublicId = getPublicId(video.thumbnailUrl);
+
+                console.log("OLD THUMB URL:", video.thumbnailUrl);
+                console.log("EXTRACTED PUBLIC ID:", oldPublicId);
+
+                if (oldPublicId) {
+                    const result = await cloudinary.uploader.destroy(oldPublicId, {
+                        resource_type: "image",
+                        invalidate: true
+                    });
+
+                    console.log("CLOUDINARY DELETE RESULT:", result);
+
+                    // 🚨 IMPORTANT CHECK
+                    if (result.result !== "ok") {
+                        console.warn("Thumbnail NOT deleted:", result);
+                    }
+                }
+
+            } catch (err) {
+                console.error("Thumbnail delete error:", err);
             }
         }
+
+        // Only update AFTER delete attempt
         video.thumbnailUrl = req.files.thumbnail[0].path;
     }
 
@@ -315,7 +326,6 @@ export {
     getAllVideos,
     getAllMovies,
     getNepaliMovies,
-    searchMovies,
     getVideoById,
     uploadVideo,
     updateVideo,
