@@ -17,9 +17,9 @@ export const getRecommendations = async (req, res) => {
 
     const userLikes = history
       .filter(h =>
-        h.video &&                      
-        h.video.title &&               
-        h.video.category === "movie"   
+        h.video &&
+        h.video.title &&
+        h.video.category === "movie"
       )
       .map(h => h.video.title);
 
@@ -33,10 +33,24 @@ export const getRecommendations = async (req, res) => {
       return res.json(trending);
     }
 
-    
-    const response = await axios.post("http://localhost:8000/recommend", {
-      user_likes: userLikes
-    });
+    // 4. Get recommendations from Python service
+    // const response = await axios.post("http://localhost:8000/recommend", {
+    //   user_likes: userLikes
+    // });
+    if (!process.env.RECOMMENDER_URL) {
+      const trending = await Video.find({ category: "movie" })
+        .sort({ views: -1 })
+        .limit(4)
+        .select("title thumbnailUrl");
+
+      return res.json(trending);
+    }
+
+    const response = await axios.post(
+      `${process.env.RECOMMENDER_URL}/recommend`,
+      { user_likes: userLikes }
+    );
+
 
     const recommendedTitles = response.data.recommendations;
 
