@@ -283,11 +283,11 @@
   });
   const logoutUser = asyncHandler(async (req, res) => {
 
-    const options = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-    };
+  const options = {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none"
+  };
 
     return res
       .status(200)
