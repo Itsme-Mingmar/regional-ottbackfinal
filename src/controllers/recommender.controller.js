@@ -1,4 +1,4 @@
-import WatchHistory from "../models/watchHistory.js";
+import WatchHistory from "../models/WatchHistory.js";
 import Video from "../models/Video.js";
 import axios from "axios";
 
