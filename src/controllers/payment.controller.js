@@ -149,22 +149,43 @@ const verifyKhalti = asyncHandler(async (req, res) => {
   pending.isProcessed = true;
   await pending.save();
 
+  const safeUser = {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    selectedProvince: {
+      id: provinceDoc._id,
+      name: provinceDoc.name,
+      slug: provinceDoc.slug
+    },
+    planType: user.planType,
+    billingCycle: user.billingCycle,
+    subscriptionStatus: user.subscriptionStatus,
+    subscriptionStartDate: user.subscriptionStartDate,
+    subscriptionEndDate: user.subscriptionEndDate,
+  };
+
   const token = accesstoken({
     id: user._id,
     email: user.email,
     province: provinceDoc.slug,
   });
 
+  const isProduction = process.env.NODE_ENV === "production";
+
+  const cookieOptions = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+  };
+
   return res
-    .cookie("accessToken", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-    })
+    .cookie("accessToken", token, cookieOptions)
     .json({
       success: true,
       message: "Payment success",
-      user,
+      user: safeUser,
     });
 });
 
