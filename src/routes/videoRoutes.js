@@ -30,23 +30,23 @@ videoRouter.post(
 );
 
 // Get all videos
-videoRouter.get("/", getAllVideos);
+videoRouter.get("/", verifyJWT, getAllVideos);
 
 // Movies
-videoRouter.get("/movies", getAllMovies);
+videoRouter.get("/movies",verifyJWT, getAllMovies);
 
 // Provinces list
-videoRouter.get("/provinces", getAllProvinces);
+videoRouter.get("/provinces",verifyJWT, getAllProvinces);
 
 // Nepali movies
-videoRouter.get("/nepali-movies", getNepaliMovies);
+videoRouter.get("/nepali-movies",verifyJWT, getNepaliMovies);
 
 // Province-based videos
 videoRouter.get("/province/:slug/:category", getProvinceVideos);
 
 
 // Get single video
-videoRouter.get("/:videoId", getVideoById);
+videoRouter.get("/:videoId",verifyJWT, getVideoById);
 
 // Update video
 videoRouter.put(
