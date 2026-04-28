@@ -33,7 +33,7 @@ const initiateKhalti = asyncHandler(async (req, res) => {
   const purchase_order_id = `sub_${Date.now()}`;
 
   const response = await fetch(
-    "https://dev.khalti.com/api/v2/epayment/initiate/",
+    "https://a.khalti.com/api/v2/epayment/initiate/",
     {
       method: "POST",
       headers: {
@@ -82,7 +82,7 @@ const verifyKhalti = asyncHandler(async (req, res) => {
 
   // Verify payment
   const response = await fetch(
-    "https://dev.khalti.com/api/v2/epayment/lookup/",
+    "https://a.khalti.com/api/v2/epayment/lookup/",
     {
       method: "POST",
       headers: {
