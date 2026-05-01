@@ -23,7 +23,8 @@ const verifyJWT = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    throw new apiError(401, "Invalid or expired token");
+    console.error("JWT verify error:", error.message);
+    return next(new apiError(401, error.message || "Invalid or expired token"));
   }
 };
 
