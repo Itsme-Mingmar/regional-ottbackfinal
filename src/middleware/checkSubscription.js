@@ -5,11 +5,11 @@ const checkSubscription = (requiredPlan = "premium") => {
 
     if (requiredPlan === "premium") {
       if (!req.user.subscriptionStatus) {
-        throw new apiError(403, "Premium subscription required");
+        return next(new apiError(403, "Premium subscription required"));
       }
 
       if (new Date() > new Date(req.user.subscriptionEndDate)) {
-        throw new apiError(403, "Subscription expired");
+        return next(new apiError(403, "Subscription expired"));
       }
     }
 
