@@ -33,7 +33,7 @@ videoRouter.post(
 videoRouter.get("/", verifyJWT, getAllVideos);
 
 // Movies
-videoRouter.get("/movies",verifyJWT, getAllMovies);
+videoRouter.get("/movies", getAllMovies);
 
 // Provinces list
 videoRouter.get("/provinces",verifyJWT, getAllProvinces);
