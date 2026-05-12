@@ -12,6 +12,8 @@ const app = express();
 app.use(express.json());
 const allowedOrigins = [
   "http://localhost:5173",
+  'https://regional-ott-frontend-7s56-86n3zqs97-itsme-mingmars-projects.vercel.app',
+  'https://regional-ott.vercel.app',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
